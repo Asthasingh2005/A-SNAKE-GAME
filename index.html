@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Game</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  min-height:200vh;
+  display:flex;
+  justify-content:center;
+  align-items:center
+}
+.box{
+  background:#111;
+  color:#fff;
+  padding:20px;
+  border-radius:18px;
+  width:370px;
+  box-shadow:0 20px 50px rgba(231, 14, 14, 0.6)
+}
+h1{text-align:center;color:#00ffcc;margin-bottom:10px}
+.score{display:flex;justify-content:space-between;margin-bottom:8px}
+canvas{background:#000;border-radius:12px;display:block;margin:auto}
+button{
+  width:100%;
+  margin-top:10px;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:#00ffcc;
+  color:#000;
+  font-weight:bold
+}
+
+/* MOBILE CONTROLS */
+.controls{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  text-align:center
+}
+.ctrl{
+  background:#222;
+  color:#00ffcc;
+  padding:12px;
+  border-radius:10px;
+  font-size:18px;
+  user-select:none
+}
+.ctrl:active{background:#00ffcc;color:#000}
+</style>
+</head>
+
+<body>
+<div class="box">
+<h1>🐍Snake game</h1>
+
+<div class="score">
+<div>"YourScore👉": <span id="score">0</span></div>
+<div>High: <span id="high">0</span></div>
+</div>
+
+<canvas id="c" width="320" height="320"></canvas>
+
+<!-- MOBILE BUTTON CONTROLS -->
+<div class="controls">
+  <div></div>
+  <div class="ctrl" onclick="setDir('UP')">⬆</div>
+  <div></div>
+  <div class="ctrl" onclick="setDir('LEFT')">⬅</div>
+  <div class="ctrl" onclick="setDir('DOWN')">⬇</div>
+  <div class="ctrl" onclick="setDir('RIGHT')">➡</div>
+</div>
+
+<button onclick="location.reload()">Restart</button>
+</div>
+
+<audio id="eat" src="eat.wav"></audio>
+<audio id="over" src="gameover.wav"></audio>
+
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+const box=20;
+let snake=[{x:9*box,y:10*box}],dir='RIGHT',score=0;
+let high=localStorage.getItem('hs')||0;
+document.getElementById('high').innerText=high;
+
+const eat=document.getElementById('eat'),over=document.getElementById('over');
+const foodImg=new Image();foodImg.src='food.png';
+const headImg=new Image();headImg.src='snake-head.png';
+const bodyImg=new Image();bodyImg.src='snake-body.png';
+
+let food={
+  x:Math.floor(Math.random()*15+1)*box,
+  y:Math.floor(Math.random()*15+1)*box
+};
+
+// KEYBOARD
+document.addEventListener('keydown',e=>{
+if(e.keyCode==37&&dir!='RIGHT')dir='LEFT';
+if(e.keyCode==38&&dir!='DOWN')dir='UP';
+if(e.keyCode==39&&dir!='LEFT')dir='RIGHT';
+if(e.keyCode==40&&dir!='UP')dir='DOWN';
+});
+
+// MOBILE BUTTON FUNCTION
+function setDir(d){
+  if(d==='LEFT' && dir!=='RIGHT')dir='LEFT';
+  if(d==='RIGHT' && dir!=='LEFT')dir='RIGHT';
+  if(d==='UP' && dir!=='DOWN')dir='UP';
+  if(d==='DOWN' && dir!=='UP')dir='DOWN';
+}
+
+// SWIPE CONTROLS
+let sx=0,sy=0;
+c.addEventListener('touchstart',e=>{
+  sx=e.touches[0].clientX;
+  sy=e.touches[0].clientY;
+});
+c.addEventListener('touchend',e=>{
+  let ex=e.changedTouches[0].clientX;
+  let ey=e.changedTouches[0].clientY;
+  let dx=ex-sx, dy=ey-sy;
+
+  if(Math.abs(dx)>Math.abs(dy)){
+    if(dx>0) setDir('RIGHT'); else setDir('LEFT');
+  }else{
+    if(dy>0) setDir('DOWN'); else setDir('UP');
+  }
+});
+
+function collide(h,a){return a.some(p=>p.x==h.x&&p.y==h.y)}
+
+function draw(){
+x.fillRect(0,0,320,320);
+
+snake.forEach((p,i)=>{
+x.drawImage(i?bodyImg:headImg,p.x,p.y,box,box);
+});
+
+x.drawImage(foodImg,food.x,food.y,box,box);
+
+let nx=snake[0].x,ny=snake[0].y;
+if(dir=='LEFT')nx-=box;
+if(dir=='UP')ny-=box;
+if(dir=='RIGHT')nx+=box;
+if(dir=='DOWN')ny+=box;
+
+if(nx==food.x&&ny==food.y){
+score++; eat.play();
+document.getElementById('score').innerText=score;
+food={x:Math.floor(Math.random()*15+1)*box,y:Math.floor(Math.random()*15+1)*box};
+}else snake.pop();
+
+let h={x:nx,y:ny};
+
+if(nx<0||ny<0||nx>=320||ny>=320||collide(h,snake)){
+over.play(); clearInterval(g);
+if(score>high){localStorage.setItem('hs',score)}
+alert('Game Over');
+}
+snake.unshift(h);
+}
+
+let g=setInterval(draw,420);
+</script>
+</body>
+</html>
